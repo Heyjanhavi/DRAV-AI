@@ -1,0 +1,72 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="glass p-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+      <h2 class="mb-1 section-heading">Model Performance</h2>
+      <p class="text-muted mb-0">Overview of the trained model, metrics, and training setup.</p>
+    </div>
+    <span class="badge bg-success-subtle text-success">Production model</span>
+  </div>
+
+  <div class="row g-3">
+    <div class="col-md-6">
+      <div class="p-3 border rounded" style="background: #f8f9fa;">
+        <h5 class="mb-2">Model Summary</h5>
+        <ul class="list-unstyled mb-0">
+          <li><strong>Name:</strong> {{ model_info.name }}</li>
+          <li><strong>Dataset:</strong> {{ model_info.dataset }}</li>
+          <li><strong>Classes:</strong> Aloevera, Amla, Bamboo, Henna, Jasmine, Lemon, Mango, Neem, Pappaya, Tulasi</li>
+          <li><strong>Framework:</strong> {{ model_info.framework }}</li>
+          <li><strong>Parameters:</strong> {{ model_info.params }}</li>
+          <li><strong>Input size:</strong> {{ model_info.input_size }}</li>
+          <li><strong>Normalization:</strong> {{ model_info.normalization }}</li>
+          <li><strong>Train / Val images:</strong> {{ model_info.train_images }} / {{ model_info.val_images }}</li>
+        </ul>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="p-3 border rounded" style="background: #f8f9fa;">
+        <h5 class="mb-2">Key Metrics</h5>
+        <ul class="list-unstyled mb-0">
+          <li><strong>Validation Accuracy (best):</strong> {{ metrics.top1_acc }}</li>
+          <li><strong>Validation Loss (best):</strong> {{ metrics.val_loss }}</li>
+          <li><strong>Training Accuracy (final):</strong> {{ metrics.train_acc }}</li>
+          <li><strong>Training Loss (final):</strong> {{ metrics.train_loss }}</li>
+          <li><strong>Epochs:</strong> {{ metrics.last_epoch }}</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-3 mt-3">
+    <div class="col-md-6">
+      <div class="p-3 border rounded" style="background: #f8f9fa;">
+        <h5 class="mb-2">Training Notes</h5>
+        <ul class="mb-0">
+          <li>Backbone: ResNet50 (ImageNet1K_V2 weights) frozen; trained custom classifier head.</li>
+          <li>Transforms: resize to {{ model_info.input_size }}, random flip/rotation on train, ImageNet mean/std normalization.</li>
+          <li>Optimizer: Adam (lr=1e-3), Loss: Cross-entropy, Epochs: {{ metrics.last_epoch }}.</li>
+          <li>Data split: Train {{ model_info.train_images }}, Val {{ model_info.val_images }} (from notebook).</li>
+        </ul>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="p-3 border rounded" style="background: #f8f9fa;">
+        <h5 class="mb-2">Notebook Metrics</h5>
+        <ul class="mb-2">
+          <li>Per-epoch val acc: 0.8767 → 0.8836 → 0.9247 → 0.9247 → <strong>{{ metrics.top1_acc }}</strong></li>
+          <li>Per-epoch val loss: 1.1688 → 0.7504 → 0.5574 → 0.4881 → <strong>{{ metrics.val_loss }}</strong></li>
+          <li>Confusion matrix & classification report computed on {{ model_info.val_images }}-image val set.</li>
+        </ul>
+        <p class="text-muted small mb-0">Charts can be added here later using the stored arrays in the training notebook.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="mt-4 d-flex justify-content-end">
+    <a href="{{ url_for('predict') }}" class="btn btn-outline-secondary me-2">Back to Predict</a>
+    <a href="{{ url_for('gemini_details', plant_name='Tulsi') }}" class="btn btn-primary">View AI Demo</a>
+  </div>
+</div>
+{% endblock %}

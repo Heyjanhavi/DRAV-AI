@@ -1,0 +1,153 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="row g-4 align-items-start">
+  <div class="col-lg-6">
+    <div class="glass p-4">
+      <h2 class="mb-3 section-heading">Upload leaf image</h2>
+      <form method="POST" enctype="multipart/form-data" class="row g-3">
+        <div class="col-12">
+          <label class="form-label">Select image (png/jpg/jpeg)</label>
+          <input type="file" name="image" class="form-control" accept="image/png,image/jpeg" required>
+        </div>
+        <div class="col-12 d-flex justify-content-start align-items-center">
+          <button class="btn btn-success" type="submit">Predict</button>
+        </div>
+      </form>
+    </div>
+
+    {% if prediction %}
+    <div class="glass p-4 mt-4">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+          <h4 class="mb-1">Prediction</h4>
+          <p class="display-6 fw-semibold text-success mb-0">{{ prediction }}</p>
+          {% if confidence %}
+            <p class="text-muted mb-0">Confidence: {{ (confidence * 100) | round(2) }}%</p>
+          {% endif %}
+        </div>
+        <div>
+          {% if gemini_enabled %}
+            <a class="btn btn-primary" href="{{ url_for('gemini_details', plant_name=prediction) }}">
+              View AI Gemini details
+            </a>
+          {% else %}
+            <button class="btn btn-secondary" disabled>Gemini API key missing</button>
+          {% endif %}
+        </div>
+      </div>
+      <p class="text-muted small mb-0">Use the Gemini button to see full medicinal applications and precautions.</p>
+    </div>
+    {% endif %}
+  </div>
+
+  <div class="col-lg-6">
+    <div class="glass p-4 mb-3">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <h4 class="mb-0">Health Chatbot</h4>
+        <span class="badge bg-light text-dark">Available anytime</span>
+      </div>
+      <div id="chat-messages" class="border rounded p-3 mb-3" style="height: 240px; overflow-y: auto; background: #f8f9fa;">
+        <p class="text-muted mb-0">Ask any health question. Responses use safe guidance and the identified plant when relevant.</p>
+      </div>
+      <div class="input-group">
+        <input id="chat-input" type="text" class="form-control" placeholder="Type your health question..." aria-label="Health question">
+        <button id="chat-send" class="btn btn-primary" type="button">Send</button>
+      </div>
+      <div id="chat-status" class="text-muted small mt-2"></div>
+    </div>
+
+    <div class="glass p-4">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <h4 class="mb-0">Home Remedies</h4>
+        <span class="badge bg-success-subtle text-success">Natural focus</span>
+      </div>
+      <p class="text-muted small mb-2">Get natural/Ayurvedic remedies for your symptoms. Uses the identified plant when appropriate, or an optional plant you specify.</p>
+      <div class="input-group mb-2">
+        <input id="remedy-input" type="text" class="form-control" placeholder="Describe symptoms (e.g., sore throat, headache)" aria-label="Symptoms">
+      </div>
+      <div class="input-group mb-2">
+        <input id="remedy-plant" type="text" class="form-control" placeholder="Optional: plant to focus on (e.g., tulsi)" aria-label="Plant override">
+        <button id="remedy-send" class="btn btn-success" type="button">Get remedies</button>
+      </div>
+      <div id="remedy-status" class="text-muted small mb-2"></div>
+      <div id="remedy-result" class="border rounded p-3" style="min-height: 80px; background: #f8f9fa;"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  (function() {
+    const plantName = "{{ prediction or '' }}";
+    const chatBox = document.getElementById('chat-messages');
+    const chatInput = document.getElementById('chat-input');
+    const chatSend = document.getElementById('chat-send');
+    const chatStatus = document.getElementById('chat-status');
+    const remedyInput = document.getElementById('remedy-input');
+    const remedySend = document.getElementById('remedy-send');
+    const remedyPlant = document.getElementById('remedy-plant');
+    const remedyStatus = document.getElementById('remedy-status');
+    const remedyResult = document.getElementById('remedy-result');
+
+    function appendMessage(author, text) {
+      const p = document.createElement('p');
+      p.innerHTML = `<strong>${author}:</strong> ${text}`;
+      chatBox.appendChild(p);
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    async function sendChat() {
+      const msg = (chatInput.value || '').trim();
+      if (!msg) return;
+      appendMessage('You', msg);
+      chatInput.value = '';
+      chatStatus.textContent = 'Waiting for AI reply...';
+      try {
+        const res = await fetch('{{ url_for("chat_api") }}', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ message: msg, plant: (remedyPlant.value || '').trim() || plantName })
+        });
+        const data = await res.json();
+        if (!res.ok || data.error) {
+          appendMessage('Bot', data.error || 'Error occurred');
+        } else {
+          appendMessage('Bot', data.reply || 'No reply');
+        }
+      } catch (err) {
+        appendMessage('Bot', 'Network error. Please try again.');
+      } finally {
+        chatStatus.textContent = '';
+      }
+    }
+
+    async function sendRemedy() {
+      const symptoms = (remedyInput.value || '').trim();
+      if (!symptoms) return;
+      remedyStatus.textContent = 'Fetching remedies...';
+      remedyResult.textContent = '';
+      try {
+        const res = await fetch('{{ url_for("remedies_api") }}', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ symptoms, plant: (remedyPlant.value || '').trim() || plantName })
+        });
+        const data = await res.json();
+        if (!res.ok || data.error) {
+          remedyResult.innerHTML = `<span class="text-danger">${data.error || 'Error occurred'}</span>`;
+        } else {
+          remedyResult.innerHTML = data.reply || 'No remedy returned.';
+        }
+      } catch (err) {
+        remedyResult.innerHTML = '<span class="text-danger">Network error. Please try again.</span>';
+      } finally {
+        remedyStatus.textContent = '';
+      }
+    }
+
+    chatSend?.addEventListener('click', sendChat);
+    chatInput?.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendChat(); });
+    remedySend?.addEventListener('click', sendRemedy);
+    remedyInput?.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendRemedy(); });
+  })();
+</script>
+{% endblock %}

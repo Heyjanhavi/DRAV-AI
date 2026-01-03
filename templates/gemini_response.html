@@ -1,0 +1,105 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">{{ plant_name }}</h4>
+                    <small class="text-white-50">AI-Generated Plant Analysis</small>
+                </div>
+                <div class="card-body">
+                    {% if error %}
+                        <div class="alert alert-danger">
+                            <h5 class="alert-heading">Error Generating Description</h5>
+                            <p class="mb-0">{{ error }}</p>
+                        </div>
+                    {% else %}
+                        <div class="gemini-response">
+                            {% if sections.has_structured %}
+                                {% if sections.overview %}
+                                    <div class="mb-4">
+                                        <h5 class="text-primary">Overview</h5>
+                                        <p>{{ sections.overview }}</p>
+                                    </div>
+                                {% endif %}
+
+                                {% if sections.medicinal_properties %}
+                                    <div class="mb-4">
+                                        <h5 class="text-primary">Medicinal Properties</h5>
+                                        <ul class="list-group list-group-flush">
+                                            {% for prop in sections.medicinal_properties %}
+                                                <li class="list-group-item">{{ prop }}</li>
+                                            {% endfor %}
+                                        </ul>
+                                    </div>
+                                {% endif %}
+
+                                {% if sections.health_benefits %}
+                                    <div class="mb-4">
+                                        <h5 class="text-primary">Health Benefits</h5>
+                                        <ul class="list-group list-group-flush">
+                                            {% for benefit in sections.health_benefits %}
+                                                <li class="list-group-item">{{ benefit }}</li>
+                                            {% endfor %}
+                                        </ul>
+                                    </div>
+                                {% endif %}
+
+                                {% if sections.therapeutic_applications %}
+                                    <div class="mb-4">
+                                        <h5 class="text-primary">Therapeutic Applications</h5>
+                                        <ul class="list-group list-group-flush">
+                                            {% for app in sections.therapeutic_applications %}
+                                                <li class="list-group-item">{{ app }}</li>
+                                            {% endfor %}
+                                        </ul>
+                                    </div>
+                                {% endif %}
+
+                                {% if sections.precautions %}
+                                    <div class="alert alert-warning mt-4">
+                                        <h5 class="alert-heading">Precautions</h5>
+                                        <ul class="mb-0">
+                                            {% for precaution in sections.precautions %}
+                                                <li>{{ precaution }}</li>
+                                            {% endfor %}
+                                        </ul>
+                                    </div>
+                                {% endif %}
+                            {% else %}
+                                {# Fallback: show raw HTML/text if structured sections are empty #}
+                                {% if sections.raw_html %}
+                                    <div class="mb-4">
+                                        <div class="formatted-html" style="white-space: normal;">
+                                            {{ sections.raw_html | safe }}
+                                        </div>
+                                    </div>
+                                {% elif sections.plain_text %}
+                                    <div class="mb-4">
+                                        <div class="formatted-html" style="white-space: pre-line;">
+                                            {{ sections.plain_text | replace('\n', '<br>') | safe }}
+                                        </div>
+                                    </div>
+                                {% else %}
+                                    <p class="text-muted">No description returned.</p>
+                                {% endif %}
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="card-footer text-muted">
+                    <small>Generated using AI. Consult a healthcare professional before use.</small>
+                </div>
+            </div>
+            
+            <div class="text-center mt-4">
+                <a href="{{ url_for('predict') }}" class="btn btn-primary">
+                    <i class="bi bi-arrow-left"></i> Back to Prediction
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

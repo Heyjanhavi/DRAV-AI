@@ -1,0 +1,65 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="col-lg-6 col-md-8 mx-auto glass p-4">
+  <h2 class="mb-3 text-center">Register</h2>
+  <form method="POST" class="row g-3" id="register-form" novalidate>
+    <div class="col-12">
+      <label class="form-label">Username</label>
+      <input name="username" class="form-control" required autocomplete="username">
+    </div>
+    <div class="col-12">
+      <label class="form-label">Password</label>
+      <input name="password" type="password" class="form-control" required
+             minlength="6"
+             title="At least 6 characters"
+             autocomplete="new-password">
+      <div class="form-text">Use at least 6 characters; include a number for extra strength.</div>
+    </div>
+    <div class="col-12">
+      <label class="form-label">Confirm Password</label>
+      <input name="confirm_password" type="password" class="form-control" required
+             minlength="6"
+             title="Repeat the same password"
+             autocomplete="new-password">
+      <div class="form-text text-danger d-none" id="pw-mismatch">Passwords do not match.</div>
+    </div>
+    <div class="col-12">
+      <button class="btn btn-success w-100" type="submit">Create account</button>
+    </div>
+    <div class="col-12 text-center">
+      <p class="mb-0">Already registered? <a href="{{ url_for('login') }}">Login</a></p>
+    </div>
+  </form>
+  <div class="mt-3 p-3 border rounded" style="background:#f8f9fa;">
+    <h6 class="mb-2">Security tips</h6>
+    <ul class="mb-0 small text-muted">
+      <li>Don’t reuse passwords from other sites.</li>
+      <li>Avoid personal info (name, birth date, phone numbers).</li>
+      <li>Log out on shared devices and keep your .env secrets private.</li>
+    </ul>
+  </div>
+</div>
+<script>
+  (function() {
+    const form = document.getElementById('register-form');
+    if (!form) return;
+    const pw = form.querySelector('input[name="password"]');
+    const cpw = form.querySelector('input[name="confirm_password"]');
+    const msg = document.getElementById('pw-mismatch');
+
+    form.addEventListener('submit', function(e) {
+      if (!pw || !cpw) return;
+      if (pw.value !== cpw.value) {
+        e.preventDefault();
+        msg?.classList.remove('d-none');
+        cpw.classList.add('is-invalid');
+        pw.classList.add('is-invalid');
+      } else {
+        msg?.classList.add('d-none');
+        cpw.classList.remove('is-invalid');
+        pw.classList.remove('is-invalid');
+      }
+    });
+  })();
+</script>
+{% endblock %}
