@@ -1,0 +1,55 @@
+AI-Powered Medicinal Plant Identifier with Health Chatbot and Ayurvedic Remedy Recommendation System
+
+Contents
+1) Project overview
+2) Trained model details
+3) Training metrics and graphs
+4) How to run the code
+5) How it works (feature flow)
+6) Security notes
+
+1) Project overview
+- Flask web app that identifies medicinal plants from leaf images (10 classes: Aloevera, Amla, Bamboo, Henna, Jasmine, Lemon, Mango, Neem, Pappaya, Tulasi).
+- Uses a ResNet50 backbone (ImageNet1K_V2 weights) with a custom classifier head.
+- Integrates Gemini for structured plant descriptions (overview, properties, benefits, precautions), a health Q&A chatbot, and Ayurvedic remedy recommendations.
+- Authentication via SQLite (username + hashed password). Environment variables in .env handle secrets (FLASK_SECRET_KEY, GEMINI_API_KEY, GEMINI_MODEL).
+
+2) Trained model details (from resnet50_training.ipynb)
+- Architecture: ResNet50, backbone frozen; custom classifier head for 10 classes.
+- Input: 224x224 RGB, ImageNet mean/std normalization.
+- Dataset split: 1,168 train images / 292 val images.
+- Augmentations: resize to 224x224, random horizontal flip, random rotation (train); resize + normalize for val.
+- Optimizer: Adam (lr=1e-3). Loss: cross-entropy. Epochs: 5.
+- Best validation accuracy: 92.8% (val loss: 0.399). Final train acc: 96.4%, train loss: 0.408.
+- Per-epoch val acc: 0.8767 → 0.8836 → 0.9247 → 0.9247 → 0.9281.
+- Per-epoch val loss: 1.1688 → 0.7504 → 0.5574 → 0.4881 → 0.3989.
+- Confusion matrix and classification report computed on the 292-image val set.
+
+3) Training metrics and graphs
+- The notebook generates loss/accuracy curves and a confusion matrix (see resnet50_training.ipynb cells 8–12). Save the plots as PNGs (e.g., static/plots/loss_curve.png, acc_curve.png, confusion.png) if you want them displayed on the performance page; current page shows numeric metrics only.
+
+4) How to run the code
+- Prereqs: Python 3.10+, pip, virtualenv recommended. GPU optional (training done on CPU in notebook).
+- Setup:
+  python -m venv .venv
+  .venv\Scripts\activate      (Windows)
+  pip install -r requirements.txt
+  Copy .env.example to .env and set FLASK_SECRET_KEY and GEMINI_API_KEY.
+- Run server:
+  flask run  (or python app.py)
+- Access:
+  Landing page: http://127.0.0.1:5000/
+  Predict: http://127.0.0.1:5000/predict  (requires login)
+  Performance: http://127.0.0.1:5000/performance (requires login)
+
+5) How it works (feature flow)
+- Auth: Register/Login (SQLite) → sessions.
+- Predict: Upload leaf image → model infers class → confidence displayed; Gemini detail page available.
+- Gemini plant info: Structured sections (overview, medicinal properties, health benefits, therapeutic applications, precautions) with safe fallback if Gemini is missing.
+- Health chatbot: Gemini-powered Q&A; optionally uses predicted plant or user-specified plant.
+- Ayurvedic remedies: Gemini suggests home remedies using symptoms + optional plant override.
+
+6) Security notes
+- Never commit .env. Set strong FLASK_SECRET_KEY and GEMINI_API_KEY.
+- Registration enforces client-side password pattern; consider adding server-side validation/confirm password.
+- Log out on shared devices; do not reuse passwords across sites.
